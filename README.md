@@ -14,7 +14,7 @@ Official PyTorch implementation of our CVPR2022 paper [Video Frame Interpolation
 1. Clone this repo
     ```
     git clone https://github.com/Jia-Research-Lab/VFIformer.git
-    cd MASA-SR
+    cd VFIformer
     ```
 1. Modify the argument `--data_root` in `test.py` and `train.py` according to your data path.
 ### Evaluation
