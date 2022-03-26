@@ -20,6 +20,7 @@ Official PyTorch implementation of our CVPR2022 paper [Video Frame Interpolation
     cd VFIformer
     ```
 1. Modify the argument `--data_root` in `train.py` according to your Vimeo90K path.
+
 ### Evaluation
 1. Download the pre-trained models and place them into the `pretrained_models/` folder.
 
@@ -79,10 +80,15 @@ Official PyTorch implementation of our CVPR2022 paper [Video Frame Interpolation
 1. To train the smaller version, run:
     ```
     python -m torch.distributed.launch --nproc_per_node=8 --master_port=4175 train.py --launcher pytorch --gpu_ids 0,1,2,3,4,5,6,7 \
-            --loss_l1 --loss_ter --loss_flow --use_tb_logger --batch_size 24 --net_name VFIformerSmall --name 0320_VFIformerSmall --max_iter 300 \
+            --loss_l1 --loss_ter --loss_flow --use_tb_logger --batch_size 24 --net_name VFIformerSmall --name train_VFIformerSmall --max_iter 300 \
             --crop_size 192 --save_epoch_freq 5 --resume_flownet ./weights/train_IFNet/snapshot/net_final.pth
     ```
 
+### Interpolation On Your Own Data
+1. Modify the arguments `--img0_path` and `--img1_path` according to your data path, run:
+    ```
+    python demo.py --img0_path [your img0 path] --img1_path [your img1 path] --save_folder [your save path] --net_name VFIformer --resume ./pretrained_models/pretrained_VFIformer/net_220.pth
+    ```
 
 ## Acknowledgement
 We borrow some codes from [RIFE](https://github.com/hzwer/arXiv2021-RIFE) and [SwinIR](https://github.com/JingyunLiang/SwinIR). We thank the authors for their great work.
