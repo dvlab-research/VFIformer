@@ -1,0 +1,1 @@
+Put the downloaded `pretrained_VFIformer` and `pretrained_VFIformerSmall` folders here.
