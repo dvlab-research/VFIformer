@@ -66,7 +66,7 @@ Official PyTorch implementation of our CVPR2022 paper [Video Frame Interpolation
 
 
 ### Training
-1. First train the flow estimator.
+1. First train the flow estimator. (Note that skipping this step will not cause a significant impact on performance. We keep this step here only to be consistent with our paper.)
     ```
     python -m torch.distributed.launch --nproc_per_node=4 --master_port=4174 train.py --launcher pytorch --gpu_ids 0,1,2,3 \
             --loss_flow --use_tb_logger --batch_size 48 --net_name IFNet --name train_IFNet --max_iter 300 --crop_size 192 --save_epoch_freq 5
