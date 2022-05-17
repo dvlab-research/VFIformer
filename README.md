@@ -1,5 +1,5 @@
 # VFIformer
-Official PyTorch implementation of our CVPR2022 paper [Video Frame Interpolation with Transformer](https://jiaya.me/papers/cvpr22_liying.pdf)
+Official PyTorch implementation of our CVPR2022 paper [Video Frame Interpolation with Transformer](https://arxiv.org/abs/2205.07230)
 
 
 
@@ -84,7 +84,7 @@ Official PyTorch implementation of our CVPR2022 paper [Video Frame Interpolation
             --crop_size 192 --save_epoch_freq 5 --resume_flownet ./weights/train_IFNet/snapshot/net_final.pth
     ```
 
-### Interpolation On Your Own Data
+### Test on your own data
 1. Modify the arguments `--img0_path` and `--img1_path` according to your data path, run:
     ```
     python demo.py --img0_path [your img0 path] --img1_path [your img1 path] --save_folder [your save path] --net_name VFIformer --resume ./pretrained_models/pretrained_VFIformer/net_220.pth
@@ -104,3 +104,7 @@ Please consider citing our paper in your publications if it is useful for your r
     year={2022},
 }
 ```
+
+## Contact
+
+lylu@cse.cuhk.edu.hk
