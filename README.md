@@ -14,7 +14,7 @@ Official PyTorch implementation of our CVPR2022 paper [Video Frame Interpolation
 1. [UCF101 dataset](https://drive.google.com/file/d/0B7EVK8r0v71pdHBNdXB6TE1wSTQ/view?resourcekey=0-r6ihCy20h3kbgZ3ZdimPiA)
 1. [SNU-FILM dataset](https://myungsub.github.io/CAIN/)
 
-To train on the Vimeo90K, we have to first compute the ground-truth flows between frames using [Lite-flownet](https://github.com/sniklaus/pytorch-liteflownet), you can clone the Lite-flownet repo and put `compute_flow_vimeo.py` we provide under its main directory and run (remember to change the data path):
+To train on the Vimeo90K, we have to first compute the ground-truth flows between frames using [Lite-flownet](https://github.com/sniklaus/pytorch-liteflownet), you can clone the Lite-flownet repo and put `compute_flow_vimeo.py` we provide under its main directory and run (remember to change the data path in [these lines](https://github.com/dvlab-research/VFIformer/blob/b81f2ae49ba7774dfae0607ff7b05bbb9aaf1b06/compute_flow_vimeo.py#L378-L379), the liteflownet checkpoint in [this line](https://github.com/dvlab-research/VFIformer/blob/main/compute_flow_vimeo.py#L301) can be found [here](https://drive.google.com/file/d/1XS0yR0ZGSFxf7gSVuQ9ahj658acEi2fF/view)):
 ```
 python compute_flow_vimeo.py
 ```
