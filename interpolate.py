@@ -73,12 +73,13 @@ def main():
     parser.add_argument('--resume_flownet', default='', type=str)
 
     parser.add_argument('--save_folder', default='./output', type=str)
-    parser.add_argument('--base_path', default='./images', type=str)
-    parser.add_argument('--base_name', default='image', type=str)
-    parser.add_argument('--img_first', default=0, type=int)
-    parser.add_argument('--img_last', default=2, type=int)
-    parser.add_argument('--img_step', default=2, type=int)
-    parser.add_argument('--img_offset', default=0, type=int)
+
+    parser.add_argument('--base_path', default='./images', type=str, help="path to png files")
+    parser.add_argument('--base_name', default='image', type=str, help="filename before 0-filled index number")
+    parser.add_argument('--img_first', default=0, type=int, help="first image index, usually 0")
+    parser.add_argument('--img_last', default=2, type=int, help="last image index, usually count-1")
+    parser.add_argument('--img_step', default=2, type=int, help="step through the image indexes, should be 2")
+    parser.add_argument('--img_offset', default=0, type=int, help="0=odd, 1=even frame generation")
 
     ## setup training environment
     args = parser.parse_args()
