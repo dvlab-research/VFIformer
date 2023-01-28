@@ -143,7 +143,7 @@ def main():
       file_bt = os.path.join(save_path, basefile + str(translated_index + 2).zfill(num_width) + ".png")
       file_ab = os.path.join(save_path, basefile + str(translated_index + 1).zfill(num_width) + ".png")
 
-      file0 = img0 = cv2.imread(file_a)
+      file0 = img0 = cv2.imread(file_a) # could reuse from prev round
       file1 = img1 = cv2.imread(file_b)
 
       h, w, c = img0.shape

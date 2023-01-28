@@ -126,13 +126,15 @@ def main():
     divisor = 64
     multi = 3
 
+    
+
     basepath = args.base_path #"C:\CONTENT\BABY PICTURES\BABY JERRY AND AUNTS CC"
     basefile = args.base_name #"BABY JERRY AND AUNTS"
     start = args.img_first #0
     end = args.img_last #2674
     step = args.img_step #2
     offset = args.img_offset #1
-    num_width = len(str(end)) 
+    num_width = len(str(end * 2)) 
 
     for n in range(start, end, step):
       file_a = basepath + "\\" + basefile + str(n + offset).zfill(num_width) + ".png"
