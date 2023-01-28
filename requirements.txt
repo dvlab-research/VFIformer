@@ -1,32 +1,34 @@
 brotlipy==0.7.0
-certifi @ file:///C:/b/abs_85o_6fm0se/croot/certifi_1671487778835/work/certifi
-cffi @ file:///C:/b/abs_49n3v2hyhr/croot/cffi_1670423218144/work
-charset-normalizer @ file:///tmp/build/80754af9/charset-normalizer_1630003229654/work
+certifi==2022.12.7
+cffi==1.15.1
+charset-normalizer==2.0.4
 colorama==0.4.6
-cryptography @ file:///C:/b/abs_b7d7drzbky/croot/cryptography_1673298763653/work
+cryptography==38.0.4
 filelock==3.9.0
-flit_core @ file:///opt/conda/conda-bld/flit-core_1644941570762/work/source/flit_core
+flit_core==3.6.0
 huggingface-hub==0.11.1
-idna @ file:///C:/b/abs_bdhbebrioa/croot/idna_1666125572046/work
+idna==3.4
 imageio==2.24.0
 mkl-fft==1.3.1
-mkl-random @ file:///C:/ci_310/mkl_random_1643050563308/work
+mkl-random==1.2.2
 mkl-service==2.4.0
 networkx==3.0
-numpy @ file:///C:/b/abs_datssh7cer/croot/numpy_and_numpy_base_1672336199388/work
+numpy==1.23.5
 opencv-python==4.7.0.68
 packaging==23.0
 Pillow==9.3.0
+pip==22.3.1
 protobuf==3.20.1
-pycparser @ file:///tmp/build/80754af9/pycparser_1636541352034/work
-pyOpenSSL @ file:///opt/conda/conda-bld/pyopenssl_1643788558760/work
-PySocks @ file:///C:/ci_310/pysocks_1642089375450/work
+pycparser==2.21
+pyOpenSSL==22.0.0
+PySocks==1.7.1
 PyWavelets==1.4.1
 PyYAML==6.0
-requests @ file:///C:/ci/requests_1657735340829/work
+requests==2.28.1
 scikit-image==0.19.3
 scipy==1.10.0
-six @ file:///tmp/build/80754af9/six_1644875935023/work
+setuptools==65.6.3
+six==1.16.0
 tensorboardX==2.5.1
 tifffile==2022.10.10
 timm==0.6.12
@@ -34,7 +36,8 @@ torch==1.13.1
 torchaudio==0.13.1
 torchvision==0.14.1
 tqdm==4.64.1
-typing_extensions @ file:///C:/b/abs_89eui86zuq/croot/typing_extensions_1669923792806/work
-urllib3 @ file:///C:/b/abs_21qa0j12xt/croot/urllib3_1670527000672/work
-win-inet-pton @ file:///C:/ci_310/win_inet_pton_1642658466512/work
+typing_extensions==4.4.0
+urllib3==1.26.13
+wheel==0.37.1
+win-inet-pton==1.1.0
 wincertstore==0.2
