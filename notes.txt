@@ -1,0 +1,137 @@
+arbitrary upscale:
+- point to a collection of png files, it can figure out num_width, start, end, base name
+- specify first frame, last frame, steps to recreate in between
+- needs to handle any frames, even or odd difference, multiples of 2 or not
+- even frames (specify an odd group of frames, inclusive, such as frames 0 & 4 to recreate frames 1-3)
+  - figures out how many rounds: square root of difference, for 0 & 4, two rounds: 1) create frame 2, 2) deal with frames 1 and 3
+  - for frames 1 and 3, just call itself again with 0 & 2, then 2 & 4
+  - how does it know how many "deal with" rounds there are? are there always two recursively?
+    - say it's 0 and 16
+      - 0 & 16, make 8, need 0 & 8 and 8 & 16
+        - 0 & 8, make 4, need 0 & 4 and 4 & 8
+          - 0 & 4, make 2, need 0 & 2 and 2 & 4
+            - 0 & 2, make 1
+            - 2 & 4, make 3
+          -4 & 8, make 6, need 4 & 6 and 6 & 8
+            - 4 & 6, make 5
+            - 6 & 8, make 7
+        - 8 & 16, make 12, need 8 & 12 and 12 & 16
+          - 8 & 12, make 10, need 8 & 10 and 10 & 12
+            - 8 & 10, make 9
+            - 10 & 12, make 11
+          - 12 & 16, make 14, need 12 & 14 and 14 & 16
+            - 12 & 14, make 13
+            - 14 & 16, make 15
+    - say it's 0 and 15, there are two center frames 7 an 8
+      --> just split into two outer operations on 0-7 and 8-15? (the time will be off then between frames 7 and 8)
+    - say it's 0 and 12
+      - 0 & 12, make 6, need 0 & 6 and 6 & 12
+        - 0 & 6, make 3, need 0 & 3 and 3 & 6
+          - 0 & 3, make 1.5, need 0 & 1.5 and 1.5 & 3
+            - 0 & 1.5, make 0.75
+            - 1.5 & 3, make 2.25
+          - 3 & 6, make 4.5, need 3 & 4.5 and 4.5 & 6
+            - 3 & 4.5, make 3.75
+            - 4.5 & 6, make 5.25
+        - 6 & 12, make 9, need 6 & 9 and 9 & 12
+         
+
+
+rules for even diff (odd diff inclusive, single center frame):
+- receive current first and last frame
+  - create mid frame
+  - handle first split
+    - using first and mid frames
+    - noop if diff < 2
+    - otherwise, call self with first, mid frames
+  - handle second split
+    - using mid and last frames
+    - noop if diff < 2
+    - otherwise, call self with mid, last frames
+
+for now:
+- exclusive diff must be a power of 2!
+
+OR:
+- allow arbitrary frame diff and number of between steps
+- name the files for all the necessary fractional frame indexes, so they can be re-referenced during processing
+- when done, rename the files in order with integers starting with the first frame number, regardless of any overlap with the last frame number
+
+have a function to do the frame interpolation, passing three filenames
+the outer function will simply use decimal values to allow any kind of splits
+
+--------------
+
+receive: base path, base name, num width, first frame, last frame, number of splits, save folder
+
+get first and last frame 
+- they are files 0.0 and 1.0
+
+splits left? if one split is desired, the diff between first, last and first, mid will be 0.5
+OR: if user wants 4 splits that's really four doublings, or 2^4
+
+1 split means two frames become three 2^1+1, 1 new frame
+2 splits means two frames become five 2^2+1, 3 new frames
+3 splits means two frames becomes nine 2^3+1, 7 new frames
+4 splits means two frames become seventeen 2^4+1, 15 new frames
+
+for 4, could set to 2^4-1, leaving on entry if zero, otherwise decrement
+
+if split argument is 4, the splitting function will be called:
+- once initially, for 0-16, making 8
+- then twice more being called to deal with those splits 0-8 and 8-16, making 4 and 12
+- then four times more to deal with those splits 0-4, 4-8, 8-12, 12-16, making 2, 6, 10 and 14
+- then eight times more to deal with those splits, 0-2, 2-4, 4-6, 6-8, 8-10, 10-12, 12-14, 14-16, makeing 1, 3, 4, 7, 9, 11, 13, 15
+
+
+start:
+- validations
+  - start >= 0
+  - end >= start + 1
+  - split >= 1
+
+- setup
+  - split_count = split ** 2 - 1
+
+- init
+  - load first and last image files
+  - copy to output (working) folder with 0.0 and 1.0 filenames
+
+- begin
+  - call to recursively split, first index is 0.0, last index is 1.0, mid index is 0.5, also path/filename prefix
+
+- recursive split function
+  - receive first, last, mid indexes, prefix
+    - leave if the split_count < 1
+    - otherwise, decrement split_count
+    - make filenames and call function to create mid frame
+    - now deal with splits
+      - deal with first split
+        - compute sub mid frame halfway between first and mid frames
+        - call with first, mid, sub mid frames and prefix
+      - deal with second split
+        - compute sub mid frame halfway between mid and last frames
+        - call with mid, last, sub mid frames and prefix
+        
+
+- create mid frame function
+  - receive first filename, last filename, output filename    
+
+
+
+construct middle frame filename
+
+compute 
+
+
+
+
+
+
+
+
+- how to deal with the index range changing for outputs? maybe later
+
+fix glitch:
+- point to a collection of png files, it can figure out num_width
+- specify first bad frame, last bad frame
