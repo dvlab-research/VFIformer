@@ -1,29 +1,17 @@
 import os
-import sys
-import time
-import logging
 import math
-import glob
 import cv2
 import argparse
-import numpy as np
-from torch.nn.parallel import DataParallel, DistributedDataParallel
+from torch.nn.parallel import DistributedDataParallel
 from collections import OrderedDict
 import torch
 import torch.nn as nn
-from torch.autograd import Variable
 import torch.backends.cudnn as cudnn
 import torchvision
-from torchvision import transforms
-import torch.nn.functional as F
-import torch.utils.data as data
 from skimage.color import rgb2yuv, yuv2rgb
-
 from utils.util import setup_logger, print_args
 from utils.pytorch_msssim import ssim_matlab
-from models import modules
 from models.modules import define_G
-
 from tqdm import tqdm
 
 def load_networks(network, resume, strict=True):
@@ -44,111 +32,18 @@ def load_networks(network, resume, strict=True):
 
     return network
 
-global split_count
-
-def reset_split_count(num_splits):
-    global split_count
-    split_count = num_splits
-
-def enter_split():
-    global split_count
-
-    if split_count < 1:
-        return False
-
-    split_count -= 1
-    return True
-
-def exit_split():
-    global split_count
-    split_count += 1
-
-global frame_record
-
-def init_record():
-    global frame_record
-    frame_record = []
-
-def record_frame(index):
-    global frame_record
-    frame_record.append(index)
-    step_progress()
-
-def sorted_frames():
-    global frame_record
-    return sorted(frame_record)
-
-global verbose
-
-def init_log(verbose_enabled):
-    global verbose
-    verbose = verbose_enabled
-
-def log(message):
-    if verbose:
-        print(message)
-
-global split_progress
-
-def init_progress(max, description):
-    global split_progress
-    split_progress = tqdm(range(max), desc=description)
-
-def step_progress():
-    global split_progress
-    split_progress.update()
-    #split_progress.refresh()
-
-def close_progress():
-    global split_progress
-    split_progress.close()
-
 def main():
-    parser = argparse.ArgumentParser(description='inference for a single sample')
-    # parser.add_argument('--random_seed', default=0, type=int)
-    # parser.add_argument('--name', default='demo', type=str)
-    parser.add_argument('--phase', default='test', type=str)
-
-    ## device setting
+    parser = argparse.ArgumentParser(description='infinite division of video frames')
+    parser.add_argument('--model', default='./pretrained_models/pretrained_VFIformer/net_220.pth', type=str)
     parser.add_argument('--gpu_ids', type=str, default='0', help='gpu ids: e.g. 0  0,1,2, 0,2. use -1 for CPU')
-    parser.add_argument('--launcher', choices=['none', 'pytorch'], default='none', help='job launcher')
-    # parser.add_argument('--local_rank', type=int, default=0)
-
-    ## network setting
-    parser.add_argument('--net_name', default='VFIformer', type=str, help='')
-
-    ## dataloader setting
-    parser.add_argument('--crop_size', default=192, type=int)
-    # parser.add_argument('--batch_size', default=1, type=int)
-    # parser.add_argument('--num_workers', default=4, type=int)
-    
-    # parser.add_argument('--img0_path', type=str, required=True)
-    # parser.add_argument('--img1_path', type=str, required=True)
-
-    # external deps
-    parser.add_argument('--resume', default='./pretrained_models/pretrained_VFIformer/net_220.pth', type=str)
-    parser.add_argument('--resume_flownet', default='', type=str)
-
     parser.add_argument('--save_folder', default='./output', type=str)
-
     parser.add_argument('--base_path', default='./images', type=str, help="path to png files")
     parser.add_argument('--base_name', default='image', type=str, help="filename before 0-filled index number")
     parser.add_argument('--img_first', default=0, type=int, help="first image index")
     parser.add_argument('--img_last', default=2, type=int, help="last image index")
     parser.add_argument('--num_width', default=1, type=int, help="index width for zero filling")
     parser.add_argument('--num_splits', default=2, type=int, help="how many doublings of the pool of frames")
-
     parser.add_argument('--verbose', default = False, type=bool, help="display extra console details")
-
-    # enforce difference of four
-    # take first and last
-    # create middle frame and save
-
-    # take first and middle
-    # create sub middle and save
-
-    # take middle and list
-    # create sub middle and save
 
     ## setup training environment
     args = parser.parse_args()
@@ -165,30 +60,26 @@ def main():
     if len(args.gpu_ids) > 0:
         torch.cuda.set_device(args.gpu_ids[0])
 
-    # distributed training settings
-    if args.launcher == 'none':  # disabled distributed training
-        args.dist = False
-        args.rank = -1
-        # print('Disabled distributed training.')
-    else:
-        args.dist = True
-        init_dist()
-        args.world_size = torch.distributed.get_world_size()
-        args.rank = torch.distributed.get_rank()
-
-
     cudnn.benchmark = True
+
     ## save paths
     save_path = args.save_folder
-
     if not os.path.exists(save_path):
         os.makedirs(save_path)
+
+    # defaults instead of unneeded arguments
+    args.crop_size = 192
+    args.dist = False
+    args.rank = -1
+    args.phase = "test"
+    args.resume_flownet = ""
+    args.net_name = "VFIformer"
 
     ## load model
     device = torch.device('cuda' if len(args.gpu_ids) != 0 else 'cpu')
     args.device = device
     net = define_G(args)
-    net = load_networks(net, args.resume)
+    net = load_networks(net, args.model)
     net.eval()
 
     basepath = args.base_path
@@ -196,11 +87,8 @@ def main():
     start = args.img_first
     end = args.img_last
     num_width = args.num_width
-    # working_prefix = basepath + "\\" + basefile + str(start).zfill(num_width) + "-"
     working_prefix = save_path + "\\" + basefile
     for n in tqdm(range(start, end), desc="Total", position=0):
-    # for n in tqdm(range(start, end), position=0):
-    # for n in range(start, end):
         continued = n > start
         split_frames(net, args.num_splits, basepath, basefile, n, n+1, num_width, working_prefix, save_path, continued)
 
@@ -208,8 +96,8 @@ def split_frames(net, num_splits, basepath, basefile, start, end, num_width, wor
     init_record()
     reset_split_count(num_splits)
 
-    # 2 to the power of the number of doublings + the two original outer frames, origin zero
-    max_steps = num_splits ** 2 + 1
+    # 2 to the power of the number of doublings, origin zero
+    max_steps = 2 ** num_splits - 1
     init_progress(max_steps, "Frame #" + str(start + 1))
 
     first_file = basepath + "\\" + basefile + str(start).zfill(num_width) + ".png"
@@ -220,7 +108,6 @@ def split_frames(net, num_splits, basepath, basefile, start, end, num_width, wor
     # create 0.0 and 1.0 versions of the outer real frames
     first_index = 0.0
     last_index = 1.0
-
     first_file = working_prefix + str(first_index) + ".png"
     last_file = working_prefix + str(last_index) + ".png"
 
@@ -245,6 +132,7 @@ def recursive_split_frames(net, first_index, last_index, filepath_prefix):
 
         create_mid_frame(net, first_filepath, last_filepath, mid_filepath)
         record_frame(mid_index)
+        step_progress()
 
         # deal with two new split regions
         recursive_split_frames(net, first_index, mid_index, filepath_prefix)
@@ -302,6 +190,59 @@ def integerize_filenames(working_filepath_prefix, save_path, base_name, start, e
             log("integerize_filenames() renamed " + orig_filename + " to " + new_filename)
 
         index += 1
+
+global split_count
+def reset_split_count(num_splits):
+    global split_count
+    split_count = num_splits
+
+def enter_split():
+    global split_count
+    if split_count < 1:
+        return False
+    split_count -= 1
+    return True
+
+def exit_split():
+    global split_count
+    split_count += 1
+
+global frame_record
+def init_record():
+    global frame_record
+    frame_record = []
+
+def record_frame(index):
+    global frame_record
+    frame_record.append(index)
+
+def sorted_frames():
+    global frame_record
+    return sorted(frame_record)
+
+global verbose
+def init_log(verbose_enabled):
+    global verbose
+    verbose = verbose_enabled
+
+def log(message):
+    if verbose:
+        print(message)
+
+global split_progress
+def init_progress(max, description):
+    global split_progress
+    split_progress = tqdm(range(max), desc=description)
+
+def step_progress():
+    global split_progress
+    split_progress.update()
+    split_progress.refresh()
+
+def close_progress():
+    global split_progress
+    split_progress.close()
+
 
 
 if __name__ == '__main__':
