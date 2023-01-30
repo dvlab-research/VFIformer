@@ -24,6 +24,7 @@ from utils.pytorch_msssim import ssim_matlab
 from models import modules
 from models.modules import define_G
 
+from tqdm import tqdm
 
 def load_networks(network, resume, strict=True):
     load_path = resume
@@ -71,10 +72,36 @@ def init_record():
 def record_frame(index):
     global frame_record
     frame_record.append(index)
+    step_progress()
 
 def sorted_frames():
     global frame_record
     return sorted(frame_record)
+
+global verbose
+
+def init_log(verbose_enabled):
+    global verbose
+    verbose = verbose_enabled
+
+def log(message):
+    if verbose:
+        print(message)
+
+global split_progress
+
+def init_progress(max, description):
+    global split_progress
+    split_progress = tqdm(range(max), desc=description)
+
+def step_progress():
+    global split_progress
+    split_progress.update()
+    #split_progress.refresh()
+
+def close_progress():
+    global split_progress
+    split_progress.close()
 
 def main():
     parser = argparse.ArgumentParser(description='inference for a single sample')
@@ -111,6 +138,8 @@ def main():
     parser.add_argument('--num_width', default=1, type=int, help="index width for zero filling")
     parser.add_argument('--num_splits', default=2, type=int, help="how many doublings of the pool of frames")
 
+    parser.add_argument('--verbose', default = False, type=bool, help="display extra console details")
+
     # enforce difference of four
     # take first and last
     # create middle frame and save
@@ -123,6 +152,8 @@ def main():
 
     ## setup training environment
     args = parser.parse_args()
+
+    init_log(args.verbose)
 
     ## setup training device
     str_ids = args.gpu_ids.split(',')
@@ -138,7 +169,7 @@ def main():
     if args.launcher == 'none':  # disabled distributed training
         args.dist = False
         args.rank = -1
-        print('Disabled distributed training.')
+        # print('Disabled distributed training.')
     else:
         args.dist = True
         init_dist()
@@ -160,20 +191,26 @@ def main():
     net = load_networks(net, args.resume)
     net.eval()
 
-    # ## load data
-    # divisor = 64
-    # multi = 3
-
     basepath = args.base_path
     basefile = args.base_name
     start = args.img_first
     end = args.img_last
     num_width = args.num_width
+    # working_prefix = basepath + "\\" + basefile + str(start).zfill(num_width) + "-"
+    working_prefix = save_path + "\\" + basefile
+    for n in tqdm(range(start, end), desc="Total", position=0):
+    # for n in tqdm(range(start, end), position=0):
+    # for n in range(start, end):
+        continued = n > start
+        split_frames(net, args.num_splits, basepath, basefile, n, n+1, num_width, working_prefix, save_path, continued)
 
-    working_filepath_prefix = basepath + "\\" + basefile + str(start).zfill(num_width) + "-"
-
+def split_frames(net, num_splits, basepath, basefile, start, end, num_width, working_prefix, save_path, continued):
     init_record()
-    reset_split_count(args.num_splits)
+    reset_split_count(num_splits)
+
+    # 2 to the power of the number of doublings + the two original outer frames, origin zero
+    max_steps = num_splits ** 2 + 1
+    init_progress(max_steps, "Frame #" + str(start + 1))
 
     first_file = basepath + "\\" + basefile + str(start).zfill(num_width) + ".png"
     last_file = basepath + "\\" + basefile + str(end).zfill(num_width) + ".png"
@@ -184,20 +221,20 @@ def main():
     first_index = 0.0
     last_index = 1.0
 
-    first_file = working_filepath_prefix + str(first_index) + ".png"
-    last_file = working_filepath_prefix + str(last_index) + ".png"
+    first_file = working_prefix + str(first_index) + ".png"
+    last_file = working_prefix + str(last_index) + ".png"
+
     cv2.imwrite(first_file, img0)
-    cv2.imwrite(last_file, img1)
     record_frame(first_index)
+    log("main() saved " + first_file)
+
+    cv2.imwrite(last_file, img1)
     record_frame(last_index)
+    log("main() saved " + last_file)
 
-    print("main() saved " + first_file)
-    print("main() saved " + last_file)
-    print("model loading...")
-
-    recursive_split_frames(net, first_index, last_index, working_filepath_prefix)
-    
-    integerize_filenames(working_filepath_prefix, save_path, basefile, start, end)
+    recursive_split_frames(net, first_index, last_index, working_prefix)
+    integerize_filenames(working_prefix, save_path, basefile, start, end, continued, num_width)
+    close_progress()
 
 def recursive_split_frames(net, first_index, last_index, filepath_prefix):
     if enter_split():
@@ -242,22 +279,29 @@ def create_mid_frame(net, first_filepath, last_filepath, mid_filepath):
 
     imt = output[0].flip(dims=(0,)).clamp(0., 1.)
     torchvision.utils.save_image(imt, mid_filepath)
-    print("create_mid_frame() saved " + mid_filepath)
+    log("create_mid_frame() saved " + mid_filepath)
 
-def integerize_filenames(working_filepath_prefix, save_path, base_name, start, end):
-    num_width1 = len(str(end))
-    new_prefix = save_path + "//" + base_name + "[" + str(start).zfill(num_width1) + "-" + str(end).zfill(num_width1) + "]"
+def integerize_filenames(working_filepath_prefix, save_path, base_name, start, end, continued, num_width):
+    new_prefix = save_path + "//" + base_name + "[" + str(start).zfill(num_width) + "-" + str(end).zfill(num_width) + "]"
 
     frames = sorted_frames()
-    num_width2 = len(str(len(frames)))
+    this_round_num_width = len(str(len(frames)))
 
     index = 0
     for f in sorted_frames():
         orig_filename = working_filepath_prefix + str(f) + ".png"
-        new_filename = new_prefix + str(index).zfill(num_width2) + ".png"
-        os.replace(orig_filename, new_filename)
+
+        if continued and index == 0:
+            # if a continuation from a previous set of frames, delete the first frame
+            # since it's duplicate of the previous round last frame
+            os.remove(orig_filename)
+            log("integerize_filenames() removed uneeded " + orig_filename)
+        else:
+            new_filename = new_prefix + str(index).zfill(this_round_num_width) + ".png"
+            os.replace(orig_filename, new_filename)
+            log("integerize_filenames() renamed " + orig_filename + " to " + new_filename)
+
         index += 1
-        print("integerize_filenames() renamed " + orig_filename + " to " + new_filename)
 
 
 if __name__ == '__main__':
