@@ -14,6 +14,8 @@ from utils.pytorch_msssim import ssim_matlab
 from models.modules import define_G
 from tqdm import tqdm
 
+# with one split the secondary tqdm is not needed
+
 def load_networks(network, resume, strict=True):
     load_path = resume
     if isinstance(network, nn.DataParallel) or isinstance(network, DistributedDataParallel):
@@ -43,7 +45,7 @@ def main():
     parser.add_argument('--img_last', default=2, type=int, help="last image index")
     parser.add_argument('--num_width', default=1, type=int, help="index width for zero filling")
     parser.add_argument('--num_splits', default=2, type=int, help="how many doublings of the pool of frames")
-    parser.add_argument('--verbose', default = False, type=bool, help="display extra console details")
+    parser.add_argument("--verbose", dest="verbose", default=False, action="store_true", help="Show extra details")
 
     ## setup training environment
     args = parser.parse_args()

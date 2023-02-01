@@ -5,13 +5,13 @@ import argparse
 from tqdm import tqdm
 
 def main():
-    parser = argparse.ArgumentParser(description='resequence video frames')
-    parser.add_argument("--path", default="./images", type=str, help="path to files needing resequencing")
-    parser.add_argument("--new_name", default="pngsequence", type=str, help="new base filename")
-    parser.add_argument("--start", default=0, type=int, help="starting index")
-    parser.add_argument("--step", default=1, type=int, help="index step")
-    parser.add_argument("--verbose", default=False, type=bool, help="display extra details")
-    parser.add_argument("--copy", default=False, type=bool, help="copy instead of renaming the files")
+    parser = argparse.ArgumentParser(description='Resequence video frame PNG files')
+    parser.add_argument("--path", default="./images", type=str, help="Path to files to resequence")
+    parser.add_argument("--new_name", default="pngsequence", type=str, help="New filename, default 'pngsequence'")
+    parser.add_argument("--start", default=0, type=int, help="Starting index, default 0")
+    parser.add_argument("--step", default=1, type=int, help="Index step, default is 1")
+    parser.add_argument("--copy", dest="copy", default=False, action="store_true", help="Copy rather than rename files")
+    parser.add_argument("--verbose", dest="verbose", default=False, action="store_true", help="Show extra details")
     args = parser.parse_args()
 
     init_log(args.verbose)
