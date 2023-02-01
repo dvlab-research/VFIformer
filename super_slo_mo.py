@@ -14,7 +14,8 @@ from utils.pytorch_msssim import ssim_matlab
 from models.modules import define_G
 from tqdm import tqdm
 
-# with one split the secondary tqdm is not needed
+# with one split the secondary tqdm is not needed, with verbose both not needed
+# encode the frame set being worked on in the temporary files for use in inspection
 
 def load_networks(network, resume, strict=True):
     load_path = resume
@@ -90,7 +91,7 @@ def main():
     end = args.img_last
     num_width = args.num_width
     working_prefix = save_path + "\\" + basefile
-    for n in tqdm(range(start, end), desc="Total", position=0):
+    for n in tqdm(range(start, end), desc="Total", position=1):
         continued = n > start
         split_frames(net, args.num_splits, basepath, basefile, n, n+1, num_width, working_prefix, save_path, continued)
 
@@ -110,8 +111,8 @@ def split_frames(net, num_splits, basepath, basefile, start, end, num_width, wor
     # create 0.0 and 1.0 versions of the outer real frames
     first_index = 0.0
     last_index = 1.0
-    first_file = working_prefix + str(first_index) + ".png"
-    last_file = working_prefix + str(last_index) + ".png"
+    first_file = working_filepath(working_prefix, first_index)
+    last_file = working_filepath(working_prefix, last_index)
 
     cv2.imwrite(first_file, img0)
     record_frame(first_index)
@@ -127,10 +128,15 @@ def split_frames(net, num_splits, basepath, basefile, start, end, num_width, wor
 
 def recursive_split_frames(net, first_index, last_index, filepath_prefix):
     if enter_split():
-        first_filepath = filepath_prefix + str(first_index) + ".png"
-        last_filepath = filepath_prefix + str(last_index) + ".png"
         mid_index = first_index + (last_index - first_index) / 2.0
-        mid_filepath = filepath_prefix + str(mid_index) + ".png"
+
+        # first_filepath = filepath_prefix + str(first_index) + ".png"
+        # last_filepath = filepath_prefix + str(last_index) + ".png"
+        # mid_filepath = filepath_prefix + str(mid_index) + ".png"
+
+        first_filepath = working_filepath(filepath_prefix, first_index)
+        last_filepath = working_filepath(filepath_prefix, last_index)
+        mid_filepath = working_filepath(filepath_prefix, mid_index)
 
         create_mid_frame(net, first_filepath, last_filepath, mid_filepath)
         record_frame(mid_index)
@@ -179,7 +185,8 @@ def integerize_filenames(working_filepath_prefix, save_path, base_name, start, e
 
     index = 0
     for f in sorted_frames():
-        orig_filename = working_filepath_prefix + str(f) + ".png"
+        # orig_filename = working_filepath_prefix + str(f) + ".png"
+        orig_filename = working_filepath(working_filepath_prefix, f)
 
         if continued and index == 0:
             # if a continuation from a previous set of frames, delete the first frame
@@ -245,6 +252,8 @@ def close_progress():
     global split_progress
     split_progress.close()
 
+def working_filepath(filepath_prefix, index):
+    return filepath_prefix + f"{index:1.24f}.png"
 
 
 if __name__ == '__main__':
