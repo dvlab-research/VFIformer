@@ -14,27 +14,6 @@ from utils.pytorch_msssim import ssim_matlab
 from models.modules import define_G
 from tqdm import tqdm
 
-# with one split the secondary tqdm is not needed, with verbose both not needed
-# encode the frame set being worked on in the temporary files for use in inspection
-
-def load_networks(network, resume, strict=True):
-    load_path = resume
-    if isinstance(network, nn.DataParallel) or isinstance(network, DistributedDataParallel):
-        network = network.module
-    load_net = torch.load(load_path, map_location=torch.device('cpu'))
-    load_net_clean = OrderedDict()  # remove unnecessary 'module.'
-    for k, v in load_net.items():
-        if k.startswith('module.'):
-            load_net_clean[k[7:]] = v
-        else:
-            load_net_clean[k] = v
-    if 'optimizer' or 'scheduler' in net_name:
-        network.load_state_dict(load_net_clean)
-    else:
-        network.load_state_dict(load_net_clean, strict=strict)
-
-    return network
-
 def main():
     parser = argparse.ArgumentParser(description='infinite division of video frames')
     parser.add_argument('--model', default='./pretrained_models/pretrained_VFIformer/net_220.pth', type=str)
@@ -70,7 +49,7 @@ def main():
     if not os.path.exists(save_path):
         os.makedirs(save_path)
 
-    # defaults instead of unneeded arguments
+    # defaults instead of unneeded arguments from their original code
     args.crop_size = 192
     args.dist = False
     args.rank = -1
@@ -90,7 +69,7 @@ def main():
     start = args.img_first
     end = args.img_last
     num_width = args.num_width
-    working_prefix = save_path + "\\" + basefile
+    working_prefix = os.path.join(save_path, basefile)
     for n in tqdm(range(start, end), desc="Total", position=1):
         continued = n > start
         split_frames(net, args.num_splits, basepath, basefile, n, n+1, num_width, working_prefix, save_path, continued)
@@ -99,12 +78,16 @@ def split_frames(net, num_splits, basepath, basefile, start, end, num_width, wor
     init_record()
     reset_split_count(num_splits)
 
-    # 2 to the power of the number of doublings, origin zero
+    # 2 to the power of the number of doublings, exclusive
     max_steps = 2 ** num_splits - 1
     init_progress(max_steps, "Frame #" + str(start + 1))
 
-    first_file = basepath + "\\" + basefile + str(start).zfill(num_width) + ".png"
-    last_file = basepath + "\\" + basefile + str(end).zfill(num_width) + ".png"
+    # first_file = basepath + "\\" + basefile + str(start).zfill(num_width) + ".png"
+    # last_file = basepath + "\\" + basefile + str(end).zfill(num_width) + ".png"
+
+    first_file = source_filepath(basepath, basefile, start, num_width)
+    last_file = source_filepath(basepath, basefile, end, num_width)
+
     img0 = cv2.imread(first_file)
     img1 = cv2.imread(last_file)
 
@@ -241,7 +224,7 @@ def log(message):
 global split_progress
 def init_progress(max, description):
     global split_progress
-    split_progress = tqdm(range(max), desc=description)
+    split_progress = tqdm(range(max), desc=description, position=0)
 
 def step_progress():
     global split_progress
@@ -252,8 +235,34 @@ def close_progress():
     global split_progress
     split_progress.close()
 
+def source_filepath(basepath, basefile, index, num_width):
+    filename = basefile + str(index).zfill(num_width) + ".png"
+    return os.path.join(basepath, filename)
+
 def working_filepath(filepath_prefix, index):
     return filepath_prefix + f"{index:1.24f}.png"
+
+def load_networks(network, resume, strict=True):
+    load_path = resume
+    if isinstance(network, nn.DataParallel) or isinstance(network, DistributedDataParallel):
+        network = network.module
+    load_net = torch.load(load_path, map_location=torch.device('cpu'))
+    load_net_clean = OrderedDict()  # remove unnecessary 'module.'
+    for k, v in load_net.items():
+        if k.startswith('module.'):
+            load_net_clean[k[7:]] = v
+        else:
+            load_net_clean[k] = v
+    if 'optimizer' or 'scheduler' in net_name:
+        network.load_state_dict(load_net_clean)
+    else:
+        network.load_state_dict(load_net_clean, strict=strict)
+
+    return network
+
+# with one split the secondary tqdm is not needed, with verbose both not needed
+# encode the frame set being worked on in the temporary files for use in inspection
+# could presume the basefile is pngsequence to match reqesuenced output
 
 
 if __name__ == '__main__':
