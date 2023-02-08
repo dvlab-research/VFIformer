@@ -2,6 +2,9 @@
 Official PyTorch implementation of our CVPR2022 paper [Video Frame Interpolation with Transformer](https://arxiv.org/abs/2205.07230)
 
 
+## News
+* [08/02/2023] Thank @[jhogsett](https://github.com/jhogsett) for creating the [WebUI](https://github.com/jhogsett/VFIformer-WebUI) for easier use!
+
 
 ## Dependencies
 * python >= 3.8
